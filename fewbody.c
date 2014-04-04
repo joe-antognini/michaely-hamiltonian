@@ -1,0 +1,623 @@
+/* -*- linux-c -*- */
+/* fewbody.c
+
+   Copyright (C) 2002-2004 John M. Fregeau
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+#include <stdio.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <sys/times.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_odeiv.h>
+#include "fewbody.h"
+
+int fb_debug = 0;
+
+fb_ret_t fewbody(fb_input_t input, fb_units_t units, fb_hier_t *hier, double *t, gsl_rng *rng)
+{
+  int i, j, k=0, status, done=0, forceclassify=0, restart, restep;
+  long clk_tck;
+  double s, slast, sstop=FB_SSTOP, tout, h=FB_H, *y, texpand, tnew, R[3];
+  double Ei, E, Lint[3], Li[3], L[3], DeltaL[3];
+  double s2, s2prev=GSL_POSINF, s2prevprev=GSL_POSINF, s2minprev=GSL_POSINF, s2max=0.0, s2min;
+  struct tms firsttimebuf, currtimebuf;
+  clock_t firstclock, currclock;
+  fb_hier_t phier;
+  fb_ret_t retval;
+  fb_nonks_params_t nonks_params;
+  fb_ks_params_t ks_params;
+  char string1[FB_MAX_STRING_LENGTH], string2[FB_MAX_STRING_LENGTH], logentry[FB_MAX_LOGENTRY_LENGTH];
+  const gsl_odeiv_step_type *ode_type=gsl_odeiv_step_rk8pd;
+  gsl_odeiv_step *ode_step;
+  gsl_odeiv_control *ode_control;
+  gsl_odeiv_evolve *ode_evolve;
+  gsl_odeiv_system ode_sys;
+
+  /* initialize a few things */
+  fb_init_hier(hier);
+  retval.iclassify = 0;
+  retval.Rmin = FB_RMIN;
+  retval.Rmin_i = -1;
+  retval.Rmin_j = -1;
+  retval.Nosc = 0;
+  strncpy(logentry, input.firstlogentry, FB_MAX_LOGENTRY_LENGTH);
+  fb_dprintf("fewbody: 63: nobj: %d\n", hier->nobj);
+
+  /* set up the perturbation tree, initially flat */
+  phier.nstarinit = hier->nstar;
+  phier.nstar = hier->nstar;
+  fb_malloc_hier(&phier);
+  fb_init_hier(&phier);
+  for (i=0; i<phier.nstar; i++) {
+    fb_objcpy(&(phier.hier[phier.hi[1]+i]), &(hier->hier[hier->hi[1]+i]));
+  }
+
+  /* initialize GSL integration routine */
+  if (input.ks) {
+    ode_step = gsl_odeiv_step_alloc(ode_type, 8 * (hier->nstar * (hier->nstar - 1) / 2) + 1);
+    ode_control = gsl_odeiv_control_y_new(input.absacc, input.relacc);
+    ode_evolve = gsl_odeiv_evolve_alloc(8 * (hier->nstar * (hier->nstar - 1) / 2) + 1);
+    ode_sys.function = fb_ks_func;
+    ode_sys.jacobian = NULL;
+    ode_sys.dimension = 8 * (hier->nstar * (hier->nstar - 1) / 2) + 1;
+    ode_sys.params = &ks_params;
+  } else {
+    ode_step = gsl_odeiv_step_alloc(ode_type, 6 * hier->nstar);
+    ode_control = gsl_odeiv_control_y_new(input.absacc, input.relacc);
+    ode_evolve = gsl_odeiv_evolve_alloc(6 * hier->nstar);
+    ode_sys.function = fb_nonks_func;
+    ode_sys.jacobian = fb_nonks_jac;
+    ode_sys.dimension = 6 * hier->nstar;
+    ode_sys.params = &nonks_params;
+  }
+
+  /* set parameters for integrator */
+  if (input.ks) {
+    ks_params.nstar = hier->nstar;
+    ks_params.kstar = ks_params.nstar*(ks_params.nstar-1)/2;
+    fb_malloc_ks_params(&ks_params);
+    fb_init_ks_params(&ks_params, *hier);
+  } else {
+    nonks_params.nstar = hier->nstar;
+    fb_malloc_nonks_params(&nonks_params);
+    fb_init_nonks_params(&nonks_params, *hier);
+    nonks_params.PN1 = input.PN1;
+    nonks_params.PN2 = input.PN2;
+    nonks_params.PN25 = input.PN25;
+    nonks_params.PN3 = input.PN3;
+    nonks_params.PN35 = input.PN35;
+    nonks_params.units = units;
+  }
+
+  /* set the initial conditions in y_i */
+  if (input.ks) {
+    y = fb_malloc_vector(8*ks_params.kstar+1);
+    y[0] = *t;
+    fb_euclidean_to_ks(phier.obj, y, ks_params.nstar, ks_params.kstar);
+    s = 0.0;
+  } else {
+    y = fb_malloc_vector(6*nonks_params.nstar);
+    fb_euclidean_to_nonks(phier.obj, y, nonks_params.nstar);
+    s = *t;
+  }
+
+  /* store the initial energy and angular momentum */
+  Ei = fb_petot(&(hier->hier[hier->hi[1]]), hier->nstar) + fb_ketot(&(hier->hier[hier->hi[1]]), hier->nstar) + 
+    fb_einttot(&(hier->hier[hier->hi[1]]), hier->nstar);
+  fb_angmom(&(hier->hier[hier->hi[1]]), hier->nstar, Li);
+  fb_angmomint(&(hier->hier[hier->hi[1]]), hier->nstar, Lint);
+  for (i=0; i<3; i++) {
+    Li[i] += Lint[i];
+  }
+
+  retval.maxDeltaEfrac = 0;
+  retval.maxDeltaLfrac = 0;
+
+  /* integrate along */
+  fb_dprintf("fewbody: integrating...\n");
+  
+  // JMA 6-8-12 This line shouldn't be necessary since done is initialized
+  // when declared.
+  //done = 0;
+  retval.count = 0;
+  tout = *t;
+  texpand = 0.0;
+  clk_tck = sysconf(_SC_CLK_TCK);
+  firstclock = times(&firsttimebuf);
+  retval.tcpu = 0.0;
+
+  // JMA 6-7-12 -- One might want the code to output the instantaneous
+  // positions and velocities of the stars.  In that case, uncomment and
+  // fix the code below.  One would also need to add similar code in the
+  // while block.
+
+  //fprintf(stdout, "t r01 r02\n");
+  /* TODO -- Change the output to show the two radii.  RTFM to figure out
+   * hier's structure. */
+  //fprintf(stdout, "%g %g %g\n", *t, fb_mod(hier->hier[hier->hi[1] + 1].x),
+  //  fb_mod(hier->hier[hier->hi[1] + 2].x));
+  fb_dprintf("fewbody: before while loop...\n");
+
+  while (*t < input.tstop && retval.tcpu < input.tcpustop && !done) {
+    //fb_dprintf("fewbody: after while loop...\n");
+    /* DEBUG: printing of time, semimajor axis, and eccentricity when there is currently a 
+       single binary and we started with a single binary */
+    if (hier->nstarinit == 2 && hier->nstar == 2 && hier->nobj == 1) {
+      fb_dprintf("fewbody: before upsync...\n");
+      fb_upsync(&(hier->hier[hier->hi[2]+0]), *t, input, units);
+      //fb_dprintf("fewbody: after upsync...\n");
+      /* fprintf(stdout, "%g %g %g\n", 
+                 *t * units.t, hier->hier[hier->hi[2]+0].a * units.l, hier->hier[hier->hi[2]+0].e); */
+    }
+    //fb_dprintf("fewbody: after if statement...\n");
+    /* DEBUG */
+
+    /* JMA 6-11-12 If we want we can print some details as we go along.
+     * Output is of the form:
+     *    t a_0 e_0 g_0 a_1 e_1 g_1 cos_i foo L_0.x L_0.y L_0.z x_1 y_1 z_1 x_2 y_2 z_2
+     * (I think there's a bug in the foo, so it's currently
+     * gibberish.)
+     *
+     */
+    if (input.outfreq != -1) {
+      if (retval.count % input.outfreq == 0) {
+        fprintf(stdout, "%.12f %g %g %g %g  %s  (%s)\n", *t, fb_mod(hier->hier[hier->hi[1]+0].x),
+          fb_mod(hier->hier[hier->hi[1]+1].x), fb_mod(hier->hier[hier->hi[1]+2].x),
+          fb_mod(hier->hier[hier->hi[1]+3].x), 
+          fb_sprint_hier(*hier, string1),
+          fb_sprint_hier_hr(*hier, string2));
+      }
+    }
+    /*
+    if (input.outfreq != -1) {
+      if (retval.count % input.outfreq == 0) {
+        fprintf(stdout, "%.12f %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", *t,
+          hier->hier[hier->hi[2]+0].a, hier->hier[hier->hi[2]+0].e,
+          hier->hier[hier->hi[3]+0].a, hier->hier[hier->hi[3]+0].e,
+          fb_dot(hier->hier[hier->hi[2]+0].Lhat, hier->hier[hier->hi[2]+1].Lhat),
+          acos(fb_dot(hier->hier[hier->hi[2]+0].Ahat, hier->hier[hier->hi[2]+1].Ahat)) * 180 / FB_CONST_PI,
+          hier->hier[hier->hi[2]+0].Lhat[0],
+          hier->hier[hier->hi[2]+0].Lhat[1],
+          hier->hier[hier->hi[2]+0].Lhat[2],
+          hier->hier[hier->hi[1]+1].x[0] - hier->hier[hier->hi[1]+0].x[0], 
+          hier->hier[hier->hi[1]+1].x[1] - hier->hier[hier->hi[1]+0].x[1],
+          hier->hier[hier->hi[1]+1].x[2] - hier->hier[hier->hi[1]+0].x[2],
+          hier->hier[hier->hi[1]+0].x[0],
+          hier->hier[hier->hi[1]+0].x[1],
+          hier->hier[hier->hi[1]+0].x[2],
+          hier->hier[hier->hi[1]+1].x[0],
+          hier->hier[hier->hi[1]+1].x[1],
+          hier->hier[hier->hi[1]+1].x[2],
+          hier->hier[hier->hi[1]+2].x[0],
+          hier->hier[hier->hi[1]+2].x[1],
+          hier->hier[hier->hi[1]+2].x[2],
+          hier->hier[hier->hi[1]+1].v[0] - hier->hier[hier->hi[1]+0].v[0], 
+          hier->hier[hier->hi[1]+1].v[1] - hier->hier[hier->hi[1]+0].v[1],
+          hier->hier[hier->hi[1]+1].v[2] - hier->hier[hier->hi[1]+0].v[2],
+          hier->hier[hier->hi[1]+1].v[0],
+          hier->hier[hier->hi[1]+1].v[1],
+          hier->hier[hier->hi[1]+1].v[2]
+          );
+        */
+        /*
+        fprintf(stdout, "%.12f %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", *t,
+          hier->hier[hier->hi[2]+0].a, hier->hier[hier->hi[2]+0].e,
+          hier->hier[hier->hi[3]+0].a, hier->hier[hier->hi[3]+0].e,
+          fb_dot(hier->hier[hier->hi[2]+0].Lhat, hier->hier[hier->hi[2]+1].Lhat),
+          acos(fb_dot(hier->hier[hier->hi[2]+0].Ahat, hier->hier[hier->hi[2]+1].Ahat)) * 180 / FB_CONST_PI,
+          hier->hier[hier->hi[2]+0].Lhat[0],
+          hier->hier[hier->hi[2]+0].Lhat[1],
+          hier->hier[hier->hi[2]+0].Lhat[2],
+          hier->hier[hier->hi[1]+0].x[0], 
+          hier->hier[hier->hi[1]+0].x[1],
+          hier->hier[hier->hi[1]+0].x[2],
+          hier->hier[hier->hi[1]+1].x[0],
+          hier->hier[hier->hi[1]+1].x[1],
+          hier->hier[hier->hi[1]+1].x[2],
+          hier->hier[hier->hi[1]+2].x[0],
+          hier->hier[hier->hi[1]+2].x[1],
+          hier->hier[hier->hi[1]+2].x[2],
+          hier->hier[hier->hi[1]+0].v[0], 
+          hier->hier[hier->hi[1]+0].v[1],
+          hier->hier[hier->hi[1]+0].v[2],
+          hier->hier[hier->hi[1]+1].v[0],
+          hier->hier[hier->hi[1]+1].v[1],
+          hier->hier[hier->hi[1]+1].v[2],
+          hier->hier[hier->hi[1]+2].v[0],
+          hier->hier[hier->hi[1]+2].v[1],
+          hier->hier[hier->hi[1]+2].v[2]
+          );
+      }
+    }
+
+    // JMA 1-30-2013 -- Reset y so that any recentering done on the
+    // previous step is updated.
+    fb_euclidean_to_nonks(phier.obj, y, nonks_params.nstar);
+        */
+    
+    /* take one step */
+    slast = s;
+    status = gsl_odeiv_evolve_apply(ode_evolve, ode_control, ode_step, &ode_sys, &s, sstop, &h, y);
+    if (status != GSL_SUCCESS) {
+      fb_dprintf("GSL failure.\n");
+      break;
+    }
+
+    /* set objects' positions and velocities in phier */
+    if (input.ks) {
+      tnew = y[0];
+      fb_ks_to_euclidean(y, phier.obj, ks_params.nstar, ks_params.kstar);
+    } else {
+      tnew = s;
+      fb_nonks_to_euclidean(y, phier.obj, nonks_params.nstar);
+    }
+
+    /* restart: do we need to restart the integrator?
+       restep: do we need to repeat the last integration step?
+       forceclassify: do we need to force a call to the classify() routine? */
+    restart = 0;
+    restep = 0;
+    forceclassify = 0;
+
+    /* see if we need to expand or collapse the perturbation hierarchy */
+    if (fb_expand(&phier, tnew, input.tidaltol)) {
+      fb_dprintf("expanding...\n");
+      texpand = tnew;
+      s = slast;
+      restart = 1;
+      restep = 1;
+      for (i=0; i<hier->nstar; i++) {
+        for (k=0; k<3; k++) {
+          phier.hier[phier.hi[1]+i].x[k] = hier->hier[hier->hi[1]+i].x[k];
+          phier.hier[phier.hi[1]+i].v[k] = hier->hier[hier->hi[1]+i].v[k];
+        }
+      }
+      fb_elkcirt(&phier, *t, input, units);
+    } else if (tnew >= texpand) {
+      *t = tnew;
+      if (fb_collapse(&phier, tnew, input.tidaltol, input.speedtol, units, input)) {
+        fb_dprintf("collapsing...\n");
+        *t = tnew;
+        /* if there is only one object, then it's stable---force classify() */
+        if (phier.nobj == 1) {
+          forceclassify = 1;
+        } else {
+          restart = 1;
+        }
+      }
+    } else {
+      *t = tnew;
+    }
+
+    /* if we're not repeating the previous integration step, then do physics */
+    if (!restep) {
+      /* trickle down so updated information is in hier */
+      fb_trickle(&phier, *t);
+
+      // JMA 1-24-2013 -- To try to mitigate the effect of roundoff error,
+      // we are going to recenter the entire system on the center of mass
+      // of the inner binary.  
+      //
+      // NOTE THAT THIS WILL ONLY WORK FOR TRIPLE SYSTEMS!
+      //
+      // For other systems, this procedure will not help, though it should
+      // not hurt either.
+      /*
+      fb_dprintf("before resetting phier\n");
+      fb_dprintf("phier coors: %.16f %.16f %.16f\n", phier.hier[phier.hi[1]].x[0], phier.hier[phier.hi[1]+1].x[0], phier.hier[phier.hi[1]+2].x[0]);
+      for (i=0; i < hier->nstar; i++) {
+        for (k=0; k<3; k++) {
+          fb_dprintf("offset: %i %g %g\n", k, hier->hier[hier->hi[2]].x[k], hier->hier[hier->hi[2]].v[k]);
+          phier.hier[phier.hi[1]+i].x[k] -= hier->hier[hier->hi[2]].x[k];
+          phier.hier[phier.hi[1]+i].v[k] -= hier->hier[hier->hi[2]].v[k];
+        }
+      }
+
+      fb_dprintf("after resetting phier\n");
+      fb_dprintf("phier coors: %.16f %.16f %.16f\n", phier.hier[phier.hi[1]].x[0], phier.hier[phier.hi[1]+1].x[0], phier.hier[phier.hi[1]+2].x[0]);
+
+      for (k=0; k<3; k++) {
+        // Also set the hierarchies in the triple:
+        hier->hier[hier->hi[3]].x[k] -= hier->hier[hier->hi[2]].x[k];
+        hier->hier[hier->hi[2]].x[k] -= hier->hier[hier->hi[2]].x[k];
+
+        hier->hier[hier->hi[3]].v[k] -= hier->hier[hier->hi[2]].v[k];
+        hier->hier[hier->hi[2]].v[k] -= hier->hier[hier->hi[2]].v[k];
+      }
+
+      fb_dprintf("before phier trickle\n");
+      fb_dprintf("phier coors: %.16f %.16f %.16f\n", phier.hier[phier.hi[1]].x[0], phier.hier[phier.hi[1]+1].x[0], phier.hier[phier.hi[1]+2].x[0]);
+
+      fb_trickle(&phier, *t);
+
+      fb_dprintf("after phier trickle\n");
+      fb_dprintf("phier coors: %.16f %.16f %.16f\n", phier.hier[phier.hi[1]].x[0], phier.hier[phier.hi[1]+1].x[0], phier.hier[phier.hi[1]+2].x[0]);
+      fb_dprintf("star coors: %.16f %.16f %.16f\n", hier->hier[hier->hi[1]].x[0], hier->hier[hier->hi[1]+1].x[0], hier->hier[hier->hi[1]+2].x[0]);
+      */
+
+      for (i=0; i<hier->nstar; i++) {
+        for (k=0; k<3; k++) {
+          hier->hier[hier->hi[1]+i].x[k] = phier.hier[phier.hi[1]+i].x[k];
+          hier->hier[hier->hi[1]+i].v[k] = phier.hier[phier.hi[1]+i].v[k];
+        }
+      }
+      //
+      //fb_trickle(hier, *t);
+      
+      /* update Rmin (closest approach) */
+      for (i=0; i<hier->nstar-1; i++) {
+        for (j=i+1; j<hier->nstar; j++) {
+          for (k=0; k<3; k++) {
+            R[k] = hier->hier[hier->hi[1]+i].x[k] - hier->hier[hier->hi[1]+j].x[k];
+          }
+          if (fb_mod(R) < retval.Rmin) {
+            retval.Rmin = fb_mod(R);
+            retval.Rmin_i = i;
+            retval.Rmin_j = j;
+          }
+        }
+      }
+      
+      /* do physical collisions */
+      if (fb_collide(hier, input.fexp, units, rng, t)) {
+        /* initialize phier to a flat tree */
+        phier.nstar = hier->nstar;
+        fb_init_hier(&phier);
+        for (i=0; i<phier.nstar; i++) {
+          fb_objcpy(&(phier.hier[phier.hi[1]+i]), &(hier->hier[hier->hi[1]+i]));
+        }
+        
+        /* if there is only one object, then it's stable---force classify() */
+        if (phier.nobj == 1) {
+          restart = 0;
+          forceclassify = 1;
+        } else {
+          restart = 1;
+        }
+      }
+      
+      /* check for oscillations in s^2 */
+      /* first calculate s^2 */
+      s2 = 0.0;
+      for (i=0; i<hier->nstar-1; i++) {
+        for (j=i+1; j<hier->nstar; j++) {
+          for (k=0; k<3; k++) {
+            s2 += fb_sqr(hier->hier[hier->hi[1]+i].x[k] - hier->hier[hier->hi[1]+j].x[k]);
+          }
+        }
+      }
+
+      /* local min */
+      if (s2 > s2prev && s2prev < s2prevprev) {
+        s2min = s2prev;
+        /* increment Nosc if there is a valid oscillation */
+        if (s2max >= 2.0*s2minprev && s2max >= 2.0*s2min) {
+          retval.Nosc++;
+          fb_dprintf("fewbody: oscillation in s^2 detected: s2max/s2minprev=%g s2max/s2min=%g: Nosc=%d\n", s2max/s2minprev, s2max/s2min, retval.Nosc);
+          s2minprev = s2min;
+        } else {
+          fb_dprintf("fewbody: oscillation in s^2 not big enough: s2max/s2minprev=%g s2max/s2min=%g\n", s2max/s2minprev, s2max/s2min);
+          /* that pesky first min... */
+          if (s2max == 0.0) {
+            s2minprev = s2min;
+          }
+        }
+      }
+      /* local max: just set value and wait for next min */
+      if (s2 < s2prev && s2prev > s2prevprev) {
+        s2max = s2prev;
+      }
+      /* set previous values */
+      s2prevprev = s2prev;
+      s2prev = s2;
+      
+      /* see if we're done */
+      if (retval.count % input.ncount == 0 || forceclassify) {
+        status = fb_classify(hier, *t, input.tidaltol, input.speedtol, units, input);
+        retval.iclassify++;
+				fb_dprintf("fewbody: current status:  t=%.6g  %s  (%s)\n",
+             *t, fb_sprint_hier(*hier, string1),
+             fb_sprint_hier_hr(*hier, string2));
+        snprintf(&(logentry[strlen(logentry)]), FB_MAX_LOGENTRY_LENGTH-strlen(logentry),
+           "  current status:  t=%.6g  %s  (%s)\n", *t, fb_sprint_hier(*hier, string1),
+           fb_sprint_hier_hr(*hier, string2));
+        if (status) {
+          fb_dprintf("fb_classify() yielded true status.\n");
+          done = 1;
+        }
+      }
+
+      /* JMA 6-8-12 -- If the inner binary has merged, we are done. */
+      /*
+      if (hier->nstar == 2) {
+        fb_dprintf("Inner binary merged.\n");
+        done = 1;
+      }
+      */
+
+      /* print stuff if necessary */
+      if (input.Dflag == 1 && (*t >= tout || done)) {
+        tout = *t + input.dt;
+        fb_print_story(&(hier->hier[hier->hi[1]]), hier->nstar, *t, logentry);
+      }
+    }
+    
+    /* restart integrator if necessary */
+    if (restart) {
+      fb_dprintf("fewbody: restarting integrator: nobj=%d count=%ld\n", phier.nobj, retval.count);
+      fb_free_vector(y);
+      if (input.ks) {
+        fb_free_ks_params(ks_params);
+        ks_params.nstar = phier.nobj;
+        ks_params.kstar = ks_params.nstar*(ks_params.nstar-1)/2;
+        fb_malloc_ks_params(&ks_params);
+        fb_init_ks_params(&ks_params, phier);
+        
+        y = fb_malloc_vector(8*ks_params.kstar+1);
+        y[0] = *t;
+        fb_euclidean_to_ks(phier.obj, y, ks_params.nstar, ks_params.kstar);
+      } else {
+        fb_free_nonks_params(nonks_params);
+        nonks_params.nstar = phier.nobj;
+        fb_malloc_nonks_params(&nonks_params);
+        fb_init_nonks_params(&nonks_params, phier);
+        nonks_params.PN1 = input.PN1;
+        nonks_params.PN2 = input.PN2;
+        nonks_params.PN25 = input.PN25;
+        nonks_params.PN3 = input.PN3;
+        nonks_params.PN35 = input.PN35;
+        nonks_params.units = units;
+        
+        y = fb_malloc_vector(6*nonks_params.nstar);
+        fb_euclidean_to_nonks(phier.obj, y, nonks_params.nstar);
+      }
+      
+      /* and re-allocate integrator */
+      gsl_odeiv_evolve_free(ode_evolve);
+      gsl_odeiv_control_free(ode_control);
+      gsl_odeiv_step_free(ode_step);
+      
+      /* re-initialize integrator */
+      if (input.ks) {
+        ode_step = gsl_odeiv_step_alloc(ode_type, 8*ks_params.kstar+1);
+        ode_control = gsl_odeiv_control_y_new(input.absacc, input.relacc);
+        ode_evolve = gsl_odeiv_evolve_alloc(8*ks_params.kstar+1);
+        ode_sys.dimension = 8*ks_params.kstar+1;
+      } else {
+        ode_step = gsl_odeiv_step_alloc(ode_type, 6*nonks_params.nstar);
+        ode_control = gsl_odeiv_control_y_new(input.absacc, input.relacc);
+        ode_evolve = gsl_odeiv_evolve_alloc(6*nonks_params.nstar);
+        ode_sys.dimension = 6*nonks_params.nstar;
+      }
+    }
+
+    // JMA 3-11-2014 -- Make sure that energy is conserved as well as we
+    // want.  Abort if it is not.
+    E = fb_petot(&(hier->hier[hier->hi[1]]), hier->nstar) + fb_ketot(&(hier->hier[hier->hi[1]]), hier->nstar) + \
+      fb_einttot(&(hier->hier[hier->hi[1]]), hier->nstar);
+    if (fabs(E/Ei - 1.0) > retval.maxDeltaEfrac) {
+      retval.maxDeltaEfrac = fabs(E/Ei - 1.);
+    }
+    if (fabs(E/Ei - 1.0) > input.econs) {
+      fb_dprintf("fewbody(): energy conservation tolerance exceeded.\n");
+      break;
+    }
+
+    fb_angmom(&(hier->hier[hier->hi[1]]), hier->nstar, L);
+    fb_angmomint(&(hier->hier[hier->hi[1]]), hier->nstar, Lint);
+    for (i=0; i<3; i++) {
+      L[i] += Lint[i];
+      DeltaL[i] = L[i] - Li[i];
+    }
+    if (fabs(fb_mod(DeltaL)/fb_mod(Li)) > retval.maxDeltaLfrac) {
+      retval.maxDeltaLfrac = fabs(fb_mod(DeltaL) / fb_mod(Li));
+    }
+    if (fabs(fb_mod(DeltaL)/fb_mod(Li)) > input.lcons) {
+      fb_dprintf("fewbody(): angular momentum conservation tolerance exceeded.\n");
+      break;
+    }
+
+    /* update variables that change on every integration step */
+    retval.count++;
+    currclock = times(&currtimebuf);
+    retval.tcpu = ((double) (currtimebuf.tms_utime + currtimebuf.tms_stime - firsttimebuf.tms_utime - firsttimebuf.tms_stime))/((double) clk_tck);
+  }
+
+  // JMA 4-9-13 -- Print out the data at the final step. 
+  /*
+  fprintf(stdout, "%.12f %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", *t,
+    hier->hier[hier->hi[2]+0].a, hier->hier[hier->hi[2]+0].e,
+    hier->hier[hier->hi[3]+0].a, hier->hier[hier->hi[3]+0].e,
+    fb_dot(hier->hier[hier->hi[2]+0].Lhat, hier->hier[hier->hi[2]+1].Lhat),
+    acos(fb_dot(hier->hier[hier->hi[2]+0].Ahat, hier->hier[hier->hi[2]+1].Ahat)) * 180 / FB_CONST_PI,
+    hier->hier[hier->hi[2]+0].Lhat[0],
+    hier->hier[hier->hi[2]+0].Lhat[1],
+    hier->hier[hier->hi[2]+0].Lhat[2],
+    hier->hier[hier->hi[1]+1].x[0] - hier->hier[hier->hi[1]+0].x[0], 
+    hier->hier[hier->hi[1]+1].x[1] - hier->hier[hier->hi[1]+0].x[1],
+    hier->hier[hier->hi[1]+1].x[2] - hier->hier[hier->hi[1]+0].x[2],
+    hier->hier[hier->hi[1]+0].x[0],
+    hier->hier[hier->hi[1]+0].x[1],
+    hier->hier[hier->hi[1]+0].x[2],
+    hier->hier[hier->hi[1]+1].x[0],
+    hier->hier[hier->hi[1]+1].x[1],
+    hier->hier[hier->hi[1]+1].x[2],
+    hier->hier[hier->hi[1]+2].x[0],
+    hier->hier[hier->hi[1]+2].x[1],
+    hier->hier[hier->hi[1]+2].x[2],
+    hier->hier[hier->hi[1]+1].v[0] - hier->hier[hier->hi[1]+0].v[0], 
+    hier->hier[hier->hi[1]+1].v[1] - hier->hier[hier->hi[1]+0].v[1],
+    hier->hier[hier->hi[1]+1].v[2] - hier->hier[hier->hi[1]+0].v[2],
+    hier->hier[hier->hi[1]+1].v[0],
+    hier->hier[hier->hi[1]+1].v[1],
+    hier->hier[hier->hi[1]+1].v[2]
+    );
+    */
+
+  /* do final classification */
+  retval.retval = fb_classify(hier, *t, input.tidaltol, input.speedtol, units, input);
+  retval.iclassify++;
+  fb_dprintf("fewbody: current status:  t=%.6g  %s  (%s)\n",
+       *t, fb_sprint_hier(*hier, string1),
+       fb_sprint_hier_hr(*hier, string2));
+  snprintf(&(logentry[strlen(logentry)]), FB_MAX_LOGENTRY_LENGTH-strlen(logentry),
+     "  current status:  t=%.6g  %s  (%s)\n", *t, fb_sprint_hier(*hier, string1),
+     fb_sprint_hier_hr(*hier, string2));
+  
+  /* print final story */
+  if (input.Dflag == 1) {
+    fb_print_story(&(hier->hier[hier->hi[1]]), hier->nstar, *t, logentry);
+  }
+  
+  fb_dprintf("fewbody: final: phier.nobj = %d\n", phier.nobj);
+
+  E = fb_petot(&(hier->hier[hier->hi[1]]), hier->nstar) + fb_ketot(&(hier->hier[hier->hi[1]]), hier->nstar) + 
+    fb_einttot(&(hier->hier[hier->hi[1]]), hier->nstar);
+  fb_angmom(&(hier->hier[hier->hi[1]]), hier->nstar, L);
+  fb_angmomint(&(hier->hier[hier->hi[1]]), hier->nstar, Lint);
+  for (i=0; i<3; i++) {
+    L[i] += Lint[i];
+    DeltaL[i] = L[i] - Li[i];
+  }
+
+  /* free GSL stuff */
+  gsl_odeiv_evolve_free(ode_evolve);
+  gsl_odeiv_control_free(ode_control);
+  gsl_odeiv_step_free(ode_step);
+
+  /* free our own stuff */
+  fb_free_vector(y);
+  fb_free_hier(phier);
+
+  if (input.ks) {
+    fb_free_ks_params(ks_params);
+  } else {
+    fb_free_nonks_params(nonks_params);
+  }
+
+  /* done! */
+  retval.DeltaE = E-Ei;
+  retval.DeltaEfrac = E/Ei-1.0;
+  retval.DeltaL = fb_mod(DeltaL);
+  retval.DeltaLfrac = fb_mod(DeltaL)/fb_mod(Li);
+  return(retval);
+}

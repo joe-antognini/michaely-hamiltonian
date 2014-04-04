@@ -1,0 +1,123 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+FB_A1	scatter_binsingle.c	73;"	d	file:
+FB_E1	scatter_binsingle.c	74;"	d	file:
+FB_FM	fewbody_nonks.c	231;"	d	file:
+FB_FM	fewbody_nonks.c	31;"	d	file:
+FB_M0_DEF	scatter_binsingle.c	76;"	d	file:
+FB_M10_DEF	scatter_binsingle.c	77;"	d	file:
+FB_M11_DEF	scatter_binsingle.c	78;"	d	file:
+FB_REL	fewbody_nonks.c	232;"	d	file:
+FB_REL	fewbody_nonks.c	32;"	d	file:
+FB_VINF	scatter_binsingle.c	75;"	d	file:
+NEXPT	scatter_binsingle.c	80;"	d	file:
+calc_units	bin.c	/^int calc_units(fb_obj_t *obj[2], fb_units_t *units)$/;"	f
+calc_units	binbin.c	/^int calc_units(fb_obj_t *obj[2], fb_units_t *units)$/;"	f
+calc_units	binsingle.c	/^int calc_units(fb_obj_t *obj[2], fb_units_t *units)$/;"	f
+calc_units	cluster.c	/^void calc_units(fb_hier_t hier, fb_units_t *units)$/;"	f
+calc_units	scatter_binsingle.c	/^int calc_units(fb_obj_t *obj[2], fb_units_t *units)$/;"	f
+calc_units	scatter_tripsingle.c	/^int calc_units(fb_obj_t *obj[1], fb_units_t *units)$/;"	f
+calc_units	sigma_binsingle.c	/^int calc_units(fb_obj_t *obj[2], fb_units_t *units)$/;"	f
+calc_units	triple.c	/^int calc_units(fb_obj_t *obj[1], fb_units_t *units)$/;"	f
+calc_units	triplebin.c	/^int calc_units(fb_obj_t *obj[2], fb_units_t *units)$/;"	f
+fb_angmom	fewbody_utils.c	/^int fb_angmom(fb_obj_t *star, int nstar, double L[3])$/;"	f
+fb_angmomint	fewbody_utils.c	/^void fb_angmomint(fb_obj_t *star, int nstar, double L[3])$/;"	f
+fb_binaryorient	fewbody_hier.c	/^void fb_binaryorient(fb_obj_t *obj, gsl_rng *rng, double theta, double omega, double phi)$/;"	f
+fb_calc_Q	fewbody_ks.c	/^void fb_calc_Q(double q[4], double Q[4])$/;"	f
+fb_calc_Tmat	fewbody_ks.c	/^void fb_calc_Tmat(double **a, double *m, double **T, int nstar, int kstar)$/;"	f
+fb_calc_amat	fewbody_ks.c	/^void fb_calc_amat(double **a, int nstar, int kstar)$/;"	f
+fb_calc_ksmat	fewbody_ks.c	/^void fb_calc_ksmat(double Q[4], double Qmat[4][4])$/;"	f
+fb_calc_rtid	fewbody_scat.c	/^double fb_calc_rtid(fb_obj_t *interloper, fb_obj_t *bin, double tidaltol)$/;"	f
+fb_classify	fewbody_classify.c	/^int fb_classify(fb_hier_t *hier, double t, double tidaltol, double speedtol, fb_units_t units, fb_input_t params)$/;"	f
+fb_collapse	fewbody_isolate.c	/^int fb_collapse(fb_hier_t *hier, double t, double tidaltol, double speedtol, fb_units_t units, fb_input_t input)$/;"	f
+fb_collide	fewbody_coll.c	/^int fb_collide(fb_hier_t *hier, double f_exp, fb_units_t units, gsl_rng *rng, double *t)$/;"	f
+fb_create_indices	fewbody_hier.c	/^int fb_create_indices(int *hi, int nstar)$/;"	f
+fb_cross	fewbody_utils.c	/^int fb_cross(double x[3], double y[3], double z[3])$/;"	f
+fb_cub	fewbody_utils.c	/^inline double fb_cub(double x)$/;"	f
+fb_debug	fewbody.c	/^int fb_debug = 0;$/;"	v
+fb_dot	fewbody_utils.c	/^inline double fb_dot(double x[3], double y[3])$/;"	f
+fb_downsync	fewbody_hier.c	/^void fb_downsync(fb_obj_t *obj, double t)$/;"	f
+fb_einttot	fewbody_utils.c	/^double fb_einttot(fb_obj_t *star, int nstar)$/;"	f
+fb_elkcirt	fewbody_hier.c	/^void fb_elkcirt(fb_hier_t *hier, double t, fb_input_t params, fb_units_t units)$/;"	f
+fb_euclidean_to_ks	fewbody_ks.c	/^void fb_euclidean_to_ks(fb_obj_t **star, double *y, int nstar, int kstar)$/;"	f
+fb_euclidean_to_nonks	fewbody_nonks.c	/^void fb_euclidean_to_nonks(fb_obj_t **star, double *y, int nstar)$/;"	f
+fb_expand	fewbody_isolate.c	/^int fb_expand(fb_hier_t *hier, double t, double tidaltol)$/;"	f
+fb_free_hier	fewbody_hier.c	/^void fb_free_hier(fb_hier_t hier)$/;"	f
+fb_free_ks_params	fewbody_int.c	/^void fb_free_ks_params(fb_ks_params_t ks_params)$/;"	f
+fb_free_matrix	fewbody_utils.c	/^inline void fb_free_matrix(double **m)$/;"	f
+fb_free_nonks_params	fewbody_int.c	/^void fb_free_nonks_params(fb_nonks_params_t nonks_params)$/;"	f
+fb_free_vector	fewbody_utils.c	/^inline void fb_free_vector(double *v)$/;"	f
+fb_incpartition	fewbody_hier.c	/^double fb_incpartition(fb_obj_t *obj[1], double inc)$/;"	f
+fb_init_hier	fewbody_hier.c	/^void fb_init_hier(fb_hier_t *hier)$/;"	f
+fb_init_ks_params	fewbody_int.c	/^void fb_init_ks_params(fb_ks_params_t *ks_params, fb_hier_t hier)$/;"	f
+fb_init_nonks_params	fewbody_int.c	/^void fb_init_nonks_params(fb_nonks_params_t *nonks_params, fb_hier_t hier)$/;"	f
+fb_init_scattering	fewbody_scat.c	/^void fb_init_scattering(fb_obj_t *obj[2], double vinf, double b, double rtid)$/;"	f
+fb_is_collision	fewbody_coll.c	/^int fb_is_collision(double r, double R1, double R2) {$/;"	f
+fb_is_stable	fewbody_classify.c	/^int fb_is_stable(fb_obj_t *obj)$/;"	f
+fb_is_stable_binary	fewbody_classify.c	/^int fb_is_stable_binary(fb_obj_t *obj)$/;"	f
+fb_is_stable_quad	fewbody_classify.c	/^int fb_is_stable_quad(fb_obj_t *obj)$/;"	f
+fb_is_stable_triple	fewbody_classify.c	/^int fb_is_stable_triple(fb_obj_t *obj)$/;"	f
+fb_kepler	fewbody_utils.c	/^double fb_kepler(double e, double mean_anom)$/;"	f
+fb_keplerfunc	fewbody_utils.c	/^double fb_keplerfunc(double ecc_anom, void *params)$/;"	f
+fb_ketot	fewbody_utils.c	/^double fb_ketot(fb_obj_t *star, int nstar)$/;"	f
+fb_ks_Einit	fewbody_ks.c	/^double fb_ks_Einit(const double *y, fb_ks_params_t params)$/;"	f
+fb_ks_dot	fewbody_ks.c	/^inline double fb_ks_dot(double x[4], double y[4])$/;"	f
+fb_ks_func	fewbody_ks.c	/^int fb_ks_func(double s, const double *y, double *f, void *params)$/;"	f
+fb_ks_mod	fewbody_ks.c	/^inline double fb_ks_mod(double x[4])$/;"	f
+fb_ks_to_euclidean	fewbody_ks.c	/^void fb_ks_to_euclidean(double *y, fb_obj_t **star, int nstar, int kstar)$/;"	f
+fb_malloc_hier	fewbody_hier.c	/^void fb_malloc_hier(fb_hier_t *hier)$/;"	f
+fb_malloc_ks_params	fewbody_int.c	/^void fb_malloc_ks_params(fb_ks_params_t *ks_params)$/;"	f
+fb_malloc_matrix	fewbody_utils.c	/^inline double **fb_malloc_matrix(int nr, int nc)$/;"	f
+fb_malloc_nonks_params	fewbody_int.c	/^void fb_malloc_nonks_params(fb_nonks_params_t *nonks_params)$/;"	f
+fb_malloc_vector	fewbody_utils.c	/^inline double *fb_malloc_vector(int n)$/;"	f
+fb_mardling	fewbody_classify.c	/^int fb_mardling(fb_obj_t *obj, int ib, int is)$/;"	f
+fb_merge	fewbody_coll.c	/^void fb_merge(fb_obj_t *obj1, fb_obj_t *obj2, int nstarinit, double f_exp, fb_units_t units, gsl_rng *rng)$/;"	f
+fb_mod	fewbody_utils.c	/^inline double fb_mod(double x[3])$/;"	f
+fb_n_hier	fewbody_hier.c	/^int fb_n_hier(fb_obj_t *obj)$/;"	f
+fb_nonks_func	fewbody_nonks.c	/^int fb_nonks_func(double t, const double *y, double *f, void *params)$/;"	f
+fb_nonks_jac	fewbody_nonks.c	/^int fb_nonks_jac(double t, const double *y, double *dfdy, double *dfdt, void *params)$/;"	f
+fb_nonks_to_euclidean	fewbody_nonks.c	/^void fb_nonks_to_euclidean(double *y, fb_obj_t **star, int nstar)$/;"	f
+fb_normalize	fewbody_scat.c	/^void fb_normalize(fb_hier_t *hier, fb_units_t units)$/;"	f
+fb_objcpy	fewbody_hier.c	/^void fb_objcpy(fb_obj_t *obj1, fb_obj_t *obj2)$/;"	f
+fb_outerketot	fewbody_utils.c	/^double fb_outerketot(fb_obj_t **obj, int nobj)$/;"	f
+fb_outerpetot	fewbody_utils.c	/^double fb_outerpetot(fb_obj_t **obj, int nobj)$/;"	f
+fb_petot	fewbody_utils.c	/^double fb_petot(fb_obj_t *star, int nstar)$/;"	f
+fb_print_story	fewbody_io.c	/^void fb_print_story(fb_obj_t *star, int nstar, double t, char *logentry)$/;"	f
+fb_print_version	fewbody_io.c	/^void fb_print_version(FILE *stream)$/;"	f
+fb_qrt	fewbody_utils.c	/^inline double fb_qrt(double x)$/;"	f
+fb_randorient	fewbody_hier.c	/^void fb_randorient(fb_obj_t *obj, gsl_rng *rng)$/;"	f
+fb_randscat	fewbody_scat.c	/^void fb_randscat(fb_obj_t *obj, gsl_rng *rng)$/;"	f
+fb_reltide	fewbody_utils.c	/^double fb_reltide(fb_obj_t *bin, fb_obj_t *single, double r)$/;"	f
+fb_sprint_hier	fewbody_hier.c	/^char *fb_sprint_hier(fb_hier_t hier, char string[FB_MAX_STRING_LENGTH])$/;"	f
+fb_sprint_hier_hr	fewbody_hier.c	/^char *fb_sprint_hier_hr(fb_hier_t hier, char string[FB_MAX_STRING_LENGTH])$/;"	f
+fb_sqr	fewbody_utils.c	/^inline double fb_sqr(double x)$/;"	f
+fb_trickle	fewbody_hier.c	/^void fb_trickle(fb_hier_t *hier, double t)$/;"	f
+fb_upsync	fewbody_hier.c	/^void fb_upsync(fb_obj_t *obj, double t, fb_input_t params, fb_units_t units)$/;"	f
+fb_vkick	fewbody_coll.c	/^double fb_vkick(double m1, double m2)$/;"	f
+fewbody	fewbody.c	/^fb_ret_t fewbody(fb_input_t input, fb_units_t units, fb_hier_t *hier, double *t, gsl_rng *rng)$/;"	f
+fv	cluster.c	/^double fv(double v, void *params)$/;"	f
+main	bin.c	/^int main(int argc, char *argv[])$/;"	f
+main	binbin.c	/^int main(int argc, char *argv[])$/;"	f
+main	binsingle.c	/^int main(int argc, char *argv[])$/;"	f
+main	cluster.c	/^int main(int argc, char *argv[])$/;"	f
+main	scatter_binsingle.c	/^int main(int argc, char **argv)$/;"	f
+main	scatter_tripsingle.c	/^int main(int argc, char *argv[])$/;"	f
+main	sigma_binsingle.c	/^int main(int argc, char *argv[])$/;"	f
+main	triple.c	/^int main(int argc, char *argv[])$/;"	f
+main	triplebin.c	/^int main(int argc, char *argv[])$/;"	f
+pi2	fewbody_hier.c	29;"	d	file:
+pi2	fewbody_nonks.c	33;"	d	file:
+print_usage	bin.c	/^void print_usage(FILE *stream)$/;"	f
+print_usage	binbin.c	/^void print_usage(FILE *stream)$/;"	f
+print_usage	binsingle.c	/^void print_usage(FILE *stream)$/;"	f
+print_usage	cluster.c	/^void print_usage(FILE *stream)$/;"	f
+print_usage	scatter_tripsingle.c	/^void print_usage(FILE *stream)$/;"	f
+print_usage	sigma_binsingle.c	/^void print_usage(FILE *stream)$/;"	f
+print_usage	triple.c	/^void print_usage(FILE *stream)$/;"	f
+print_usage	triplebin.c	/^void print_usage(FILE *stream)$/;"	f
+usage	scatter_binsingle.c	/^void usage(void )$/;"	f
+vf	cluster.c	/^double vf(double f)$/;"	f

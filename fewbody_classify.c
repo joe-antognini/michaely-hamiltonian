@@ -162,7 +162,7 @@ int fb_classify(fb_hier_t *hier, double t, double tidaltol, double speedtol, fb_
   }
   
   /* check stability of bound hierarchies */
-  for (i=2; i<=hier->nstar; i++) {
+  for (i=2; i<hier->nstar; i++) {
     for (j=0; j<hier->narr[i]; j++) {
       if (!fb_is_stable(&(hier->hier[hier->hi[i]+j]))) {
         fb_dprintf("fewbody: classify(): unstable hierarchy: i=%d hier->narr[i]=%d j=%d\n", 

@@ -162,7 +162,7 @@ int fb_classify(fb_hier_t *hier, double t, double tidaltol, double speedtol, fb_
   }
   
   /* check stability of bound hierarchies */
-  for (i=2; i<hier->nstar; i++) {
+  for (i=2; i<=hier->nstar; i++) {
     for (j=0; j<hier->narr[i]; j++) {
       if (!fb_is_stable(&(hier->hier[hier->hi[i]+j]))) {
         fb_dprintf("fewbody: classify(): unstable hierarchy: i=%d hier->narr[i]=%d j=%d\n", 
@@ -171,7 +171,22 @@ int fb_classify(fb_hier_t *hier, double t, double tidaltol, double speedtol, fb_
       }
     }
   }
+
+  /* JMA 4-4-2014 -- if all objects are bound and stable, continue
+   * integrating */
+  if (hier->narr[hier->nstar] == 1) {
+    fb_dprintf("fewbody: classify(): all objects bound and Mardling stable; encounter not done.\n");
+    return(0);
+  }
   
+  /* JMA 4-4-2014 -- TODO: This function below appears to be broken.  It
+   * should fulfill the function of the if clause above (checking whether
+   * the outer objects are Mardling stable.  However, if there is center of
+   * mass motion, this will add a spurious kinetic energy term and may cause
+   * this function to fail.  I'm not sure if that's what's going on here,
+   * but it's a possible reason why this check is failing.
+   */
+
   /* it is possible that the system has passed all the above tests, but its
      outer objects are bound */
   if (fb_outerketot(hier->obj, hier->nobj) + fb_outerpetot(hier->obj, hier->nobj) < 0.0) {

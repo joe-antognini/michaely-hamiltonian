@@ -41,36 +41,43 @@
 #define FB_M000 (1.0 * FB_CONST_MSUN)
 #define FB_M001 (1.0 * FB_CONST_MSUN)
 #define FB_M01 (1.0 * FB_CONST_MSUN)
-#define FB_M1 (1.0 * FB_CONST_MSUN)
+#define FB_M10 (1.0 * FB_CONST_MSUN)
+#define FB_M11 (1.0 * FB_CONST_MSUN)
 
-#define FB_R000 (1.0 * FB_CONST_RSUN)
-#define FB_R001 (1.0 * FB_CONST_RSUN)
-#define FB_R01 (1.0 * FB_CONST_RSUN)
-#define FB_R1 (1.0 * FB_CONST_RSUN)
+#define FB_R000 (0.0 * FB_CONST_RSUN)
+#define FB_R001 (0.0 * FB_CONST_RSUN)
+#define FB_R01 (0.0 * FB_CONST_RSUN)
+#define FB_R10 (0.0 * FB_CONST_RSUN)
+#define FB_R11 (0.0 * FB_CONST_RSUN)
 
 #define FB_A00 (1.0 * FB_CONST_AU)
 #define FB_A0 (10.0 * FB_CONST_AU)
+#define FB_A1 (10.0 * FB_CONST_AU)
 
 #define FB_E00 0.0
 #define FB_E0 0.0
+#define FB_E1 0.0
 
-#define FB_VINF (6.0 * FB_CONST_KMS)
-#define FB_BMAX (20.0 * FB_CONST_AU)
+#define FB_VINF (20.0 * FB_CONST_KMS)
+#define FB_BMAX -1.
+#define FB_XBMAX 1.
 
 // JMA 6-8-12
 #define FB_INC -1.0 /* randomized inclinations */
-#define FB_PERIARG_IN -1.0 /* randomized argument of periapsis */
-#define FB_PERIARG_OUT -1.0 /* randomized argument of periapsis */
+#define FB_P00 -1.0 /* randomized argument of periapsis */
+#define FB_P0 -1.0 /* randomized argument of periapsis */
+#define FB_P1 -1.0 /* randomized argument of periapsis */
 
 #define FB_DT 1.0 /* approximate output dt */
-#define FB_TSTOP 1.0e12 /* in units of t_dyn */
+#define FB_TSTOP 100 /* in units of t_dyn */
 #define FB_TCPUSTOP 3600.0 /* in seconds */
 
-#define FB_ABSACC 1.0e-14 /* absolute accuracy of integrator */
-#define FB_RELACC 1.0e-14 /* relative accuracy of integrator */
+#define FB_ABSACC 1.0e-9 /* absolute accuracy of integrator */
+#define FB_RELACC 1.0e-9 /* relative accuracy of integrator */
 #define FB_NCOUNT 1 /* number of timesteps between calls to classify() */
-#define FB_OUTFREQ 10000 /* number of timesteps between printing orbital information */
-#define FB_NEXP 1 /* number of experiments to run on a given call to the program */
+#define FB_OUTFREQ -1 /* number of timesteps between printing orbital information */
+#define FB_ECONS 1e-2 /* energy conservation tolerance */
+#define FB_LCONS 1e-2 /* angular momentum tolerance */
 
 #define FB_KS 0
 

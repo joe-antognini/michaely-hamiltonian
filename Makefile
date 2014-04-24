@@ -29,7 +29,7 @@ endif
 # the core fewbody objects
 FEWBODY_OBJS = fewbody.o fewbody_classify.o fewbody_coll.o fewbody_hier.o \
 	fewbody_int.o fewbody_io.o fewbody_isolate.o fewbody_ks.o \
-	fewbody_nonks.o fewbody_scat.o fewbody_utils.o scatter_tripsingle.o 
+	fewbody_nonks.o fewbody_scat.o fewbody_utils.o 
 
 all: cluster triplebin binbin binsingle sigma_binsingle bin scatter_binsingle \
 	scatter_tripsingle
@@ -58,8 +58,8 @@ scatter_binsingle: scatter_binsingle.o $(FEWBODY_OBJS)
 scatter_tripsingle: scatter_tripsingle.o $(FEWBODY_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
 
-#scatter_tripbin: scatter_tripbin.o $(FEWBODY_OBJS)
-#	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
+scatter_tripbin: scatter_tripbin.o $(FEWBODY_OBJS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
 
 triple: triple.o $(FEWBODY_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
@@ -88,8 +88,8 @@ scatter_binsingle.o: scatter_binsingle.c fewbody.h Makefile
 scatter_tripsingle.o: scatter_tripsingle.c scatter_tripsingle.h fewbody.h Makefile
 	$(CC) $(CFLAGS) -c $< -o $@
 
-#scatter_tripbin.o: scatter_tripbin.c scatter_tripbin.h fewbody.h Makefile
-#	$(CC) $(CFLAGS) -c $< -o $@
+scatter_tripbin.o: scatter_tripbin.c scatter_tripbin.h fewbody.h Makefile
+	$(CC) $(CFLAGS) -c $< -o $@
 
 triple.o: triple.c triple.h fewbody.h Makefile
 	$(CC) $(CFLAGS) -c $< -o $@

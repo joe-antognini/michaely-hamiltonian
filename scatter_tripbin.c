@@ -557,6 +557,7 @@ int main(int argc, char *argv[])
   vcrit = sqrt((FB_CONST_G * (m000 + m001 + m01 + m10 + m11) * (a00 * a1 * 
     (m000 + m001) * m01 + a0 * (a1 * m000 * m001 + a00 * m10 * m11))) 
     / (a0 * a00 * a1 * (m000 + m001 + m01) * (m10 + m11))) / units.v;
+
   if (input_bmax == -1) {
     bmax = (4 / (vinf / vcrit) + 3) * (a0 + a1) * xbmax;
   } else {

@@ -550,16 +550,16 @@ int main(int argc, char *argv[])
     if (hier.obj[i]->n == 3) {
       fprintf(stderr, "  Triple endstate: mutual inclination (degrees): %.6g\n",
         180. / FB_CONST_PI * acos(fb_dot(hier.hier[hier.hi[3]].Lhat, hier.hier[hier.hi[2]].Lhat)));
-      fprintf(stderr, "                   a0 = %.6g  e0 = %.6g  a1 = %.6g  e1 = %.6g\n",
-        hier.hier[hier.hi[2]].a, hier.hier[hier.hi[2]].e, hier.hier[hier.hi[3]].a, hier.hier[hier.hi[3]].e);
+      fprintf(stderr, "                   a0=%.6g AU  e0=%.6g  a1=%.6g AU  e1=%.6g\n",
+        hier.hier[hier.hi[2]].a * units.l, hier.hier[hier.hi[2]].e, hier.hier[hier.hi[3]].a * units.l, hier.hier[hier.hi[3]].e);
       linecount += 2;
     }
   }
 
   for (i=0; i < hier.nobj; i++) {
     if (hier.obj[i]->n == 2) {
-      fprintf(stderr, "  Binary endstate: a = %.6g  e = %.6g\n",
-        hier.hier[hier.hi[2]].a, hier.hier[hier.hi[2]].e);
+      fprintf(stderr, "  Binary endstate: a=%.6g AU  e=%.6g\n",
+        hier.hier[hier.hi[2]].a * units.l, hier.hier[hier.hi[2]].e);
       linecount += 1;
     }
   }

@@ -380,8 +380,8 @@ int main(int argc, char *argv[])
   hier.hier[hier.hi[2]+0].obj[1] = &(hier.hier[hier.hi[1]+1]);
   hier.hier[hier.hi[2]+0].t = t;
   // JMA 12-12-13 -- Interloping binary
-  hier.hier[hier.hi[2]+1].obj[0] = &(hier.hier[hier.hi[1]+3]);
-  hier.hier[hier.hi[2]+1].obj[1] = &(hier.hier[hier.hi[1]+4]);
+  hier.hier[hier.hi[2]+1].obj[0] = &(hier.hier[hier.hi[1]+2]);
+  hier.hier[hier.hi[2]+1].obj[1] = &(hier.hier[hier.hi[1]+3]);
   hier.hier[hier.hi[2]+1].t = t;
 
   /* give the objects some properties */

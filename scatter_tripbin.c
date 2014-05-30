@@ -1,5 +1,5 @@
 /* -*- linux-c -*- */
-/* triple.c
+/* scatter_tripbin.c
 
    Copyright (C) 2002-2004 John M. Fregeau
    
@@ -37,7 +37,7 @@
 void print_usage(FILE *stream)
 {
   fprintf(stream, "USAGE:\n");
-  fprintf(stream, "  scatter_tripsingle [options...]\n");
+  fprintf(stream, "  scatter_tripbin [options...]\n");
   fprintf(stream, "\n");
   fprintf(stream, "OPTIONS:\n");
   fprintf(stream, "  -M --m10 <m10/MSUN>          : set mass of star 0 of inner binary of interloping binary [%.6g]\n", FB_M10/FB_CONST_MSUN);

@@ -32,7 +32,7 @@ FEWBODY_OBJS = fewbody.o fewbody_classify.o fewbody_coll.o fewbody_hier.o \
 	fewbody_nonks.o fewbody_scat.o fewbody_utils.o 
 
 all: cluster triplebin binbin binsingle sigma_binsingle bin scatter_binsingle \
-	scatter_tripsingle
+	scatter_tripsingle scatter_binbin scatter_tripbin
 
 cluster: cluster.o $(FEWBODY_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
@@ -59,6 +59,9 @@ scatter_tripsingle: scatter_tripsingle.o $(FEWBODY_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
 
 scatter_tripbin: scatter_tripbin.o $(FEWBODY_OBJS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
+
+scatter_binbin: scatter_binbin.o $(FEWBODY_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBFLAGS)
 
 triple: triple.o $(FEWBODY_OBJS)
@@ -89,6 +92,9 @@ scatter_tripsingle.o: scatter_tripsingle.c scatter_tripsingle.h fewbody.h Makefi
 	$(CC) $(CFLAGS) -c $< -o $@
 
 scatter_tripbin.o: scatter_tripbin.c scatter_tripbin.h fewbody.h Makefile
+	$(CC) $(CFLAGS) -c $< -o $@
+
+scatter_binbin.o: scatter_binbin.c scatter_binbin.h fewbody.h Makefile
 	$(CC) $(CFLAGS) -c $< -o $@
 
 triple.o: triple.c triple.h fewbody.h Makefile

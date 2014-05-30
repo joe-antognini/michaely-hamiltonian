@@ -31,7 +31,7 @@
 #include <unistd.h>
 //#include <assert.h>
 #include "fewbody.h"
-#include "scatter_tripbin.h"
+#include "scatter_binbin.h"
 
 /* print the usage */
 void print_usage(FILE *stream)
@@ -107,7 +107,6 @@ int main(int argc, char *argv[])
   int i, j;
   unsigned long int seed, input_seed;
   double m00, m01, m10, m11, r00, r01, r10, r11, a0, a1, e0, e1;
-  double inc, p0, p1;
   double input_bmax, bmax, input_vinf, vinf, vcrit, b, rtid, xbmax;
   int linecount, input_tstop;
   int random_data;

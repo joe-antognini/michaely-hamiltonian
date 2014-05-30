@@ -48,8 +48,8 @@ void print_usage(FILE *stream)
   fprintf(stream, "  -H --r01 <r01/R_SUN>         : set merge radius of star 0 of binary 0 [%.6g]\n", FB_R01/FB_CONST_RSUN);
   fprintf(stream, "  -C --r10 <r10/R_SUN>         : set merge radius of star 0 of binary 1 [%.6g]\n", FB_R10/FB_CONST_RSUN);
   fprintf(stream, "  -W --r11 <r11/R_SUN>         : set merge radius of star 1 of binary 1  [%.6g]\n", FB_R11/FB_CONST_RSUN);
-  fprintf(stream, "  -a --a0 <a0/AU>              : set semimajor axis of binary 1 [%.6g]\n", FB_A0/FB_CONST_AU);
-  fprintf(stream, "  -q --a1 <a1/AU>              : set outer semimajor axis of triple [%.6g]\n", FB_A1/FB_CONST_AU);
+  fprintf(stream, "  -a --a0 <a0/AU>              : set semimajor axis of binary 0 [%.6g]\n", FB_A0/FB_CONST_AU);
+  fprintf(stream, "  -q --a1 <a1/AU>              : set semimajor axis of binary 1 [%.6g]\n", FB_A1/FB_CONST_AU);
   fprintf(stream, "  -e --e0 <e0>                 : set eccentricity of binary 0 [%.6g]\n", FB_E0);
   fprintf(stream, "  -F --e1 <e1>                 : set eccentricity of binary 1 [%.6g]\n", FB_E1);
   fprintf(stream, "  -b --bmax <b/AU>             : set maximum impact parameter (-1 for Hut & Bahcall's choice) [%.6g]\n", FB_BMAX);

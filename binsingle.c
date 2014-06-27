@@ -57,6 +57,7 @@ void print_usage(FILE *stream)
 	fprintf(stream, "  -z --tidaltol <tidaltol>     : set tidal tolerance [%.6g]\n", FB_TIDALTOL);
 	fprintf(stream, "  -y --speedtol <speedtol>     : set speed tolerance [%.6g]\n", FB_SPEEDTOL);
 	fprintf(stream, "  -x --fexp <f_exp>            : set expansion factor of merger product [%.6g]\n", FB_FEXP);
+  fprintf(stream, "  -O --outputfreq <outputfreq> : set the output frequency (-1 for no output) [%d]\n", FB_OUTFREQ);
 	fprintf(stream, "  -P --PN1 <PN1>               : PN1 terms on? [%d]\n", FB_PN1);
 	fprintf(stream, "  -Q --PN2 <PN2>               : PN2 terms on? [%d]\n", FB_PN2);
 	fprintf(stream, "  -S --PN25 <PN25>             : PN2.5 terms on? [%d]\n", FB_PN25);
@@ -96,7 +97,7 @@ int main(int argc, char *argv[])
 	char string1[FB_MAX_STRING_LENGTH], string2[FB_MAX_STRING_LENGTH];
 	gsl_rng *rng;
 	const gsl_rng_type *rng_type=gsl_rng_mt19937;
-	const char *short_opts = "m:n:o:r:g:i:a:e:v:b:t:D:c:A:R:N:z:y:x:P:Q:S:T:U:k:s:dVh";
+	const char *short_opts = "m:n:o:r:g:i:a:e:v:b:t:D:c:A:R:N:z:y:x:O:P:Q:S:T:U:k:s:dVh";
 	const struct option long_opts[] = {
 		{"m0", required_argument, NULL, 'm'},
 		{"m10", required_argument, NULL, 'n'},
@@ -117,6 +118,7 @@ int main(int argc, char *argv[])
 		{"tidaltol", required_argument, NULL, 'z'},
 		{"speedtol", required_argument, NULL, 'y'},
 		{"fexp", required_argument, NULL, 'x'},
+		{"outfreq", required_argument, NULL, 'O'},
 		{"PN1", required_argument, NULL, 'P'},
 		{"PN2", required_argument, NULL, 'Q'},
 		{"PN25", required_argument, NULL, 'S'},
@@ -152,6 +154,7 @@ int main(int argc, char *argv[])
 	input.tidaltol = FB_TIDALTOL;
 	input.speedtol = FB_SPEEDTOL;
 	input.fexp = FB_FEXP;
+  input.outfreq = FB_OUTFREQ;
 	input.PN1 = FB_PN1;
 	input.PN2 = FB_PN2;
 	input.PN25 = FB_PN25;
@@ -232,6 +235,9 @@ int main(int argc, char *argv[])
 		case 'x':
 			input.fexp = atof(optarg);
 			break;
+    case 'O':
+      input.outfreq = atoi(optarg);
+      break;
 		case 'P':
 			input.PN1 = atoi(optarg);
 			break;
@@ -334,9 +340,9 @@ int main(int argc, char *argv[])
 	hier.hier[hier.hi[1]+2].R = r11;
 */
 
-	hier.hier[hier.hi[1]+0].R = FB_REFF_BH * FB_CONST_G * m0 / (FB_CONST_C*FB_CONST_C);
-	hier.hier[hier.hi[1]+1].R = FB_REFF_BH * FB_CONST_G * m10 / (FB_CONST_C*FB_CONST_C);
-	hier.hier[hier.hi[1]+2].R = FB_REFF_BH * FB_CONST_G * m11 / (FB_CONST_C*FB_CONST_C);
+	hier.hier[hier.hi[1]+0].R = 0;
+	hier.hier[hier.hi[1]+1].R = 0;
+	hier.hier[hier.hi[1]+2].R = 0;
 
 
 	hier.hier[hier.hi[1]+0].m = m0;
@@ -401,7 +407,7 @@ int main(int argc, char *argv[])
 	fb_dprintf("obj[%d]->m=%e\n", 1, hier.obj[1]->m);
 	fb_randorient(&(hier.hier[hier.hi[2]+0]), rng);
 	fb_downsync(&(hier.hier[hier.hi[2]+0]), t);
-	fb_upsync(&(hier.hier[hier.hi[2]+0]), t);
+	fb_upsync(&(hier.hier[hier.hi[2]+0]), t, input, units);
 	fb_dprintf("obj[%d]->a=%e\n", 1, hier.obj[1]->a);
 	fb_dprintf("obj[%d]->e=%e\n", 1, hier.obj[1]->e);
 	fb_dprintf("obj[%d]->m=%e\n", 1, hier.obj[1]->m);

@@ -1,0 +1,9 @@
+A numerical test to of the Hamiltonian given by Eq. 2 of Michaely &
+Perets (2014).  The program here takes a single star and scatters it off of
+a binary star system.  It can be run with the following command:
+
+make binsingle
+binsingle > results.dat 2> results.out
+
+results.out contains a summary of the results of the scattering experiment.
+results.dat contains the Hamiltonian of the system as a function of time.
